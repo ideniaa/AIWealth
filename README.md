@@ -36,6 +36,6 @@ AIWealth is an AI-powered chatbot designed to help users manage their finances e
 - Use AI-powered insights to optimize your finances.  
 
 ## Future Enhancements 🔮  
-✔️ Automated bank statement parsing  
-✔️ Savings goal tracker  
-✔️ Investment recommendations  
+✔️ Auto graph visualizations from data
+✔️ Better database integration with user input
+✔️ Add additional features
