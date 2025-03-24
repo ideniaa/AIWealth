@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIWealth Financial Advisor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>AIWealth</h1>
+            </div>
+            
+            <div class="nav-links">
+                <a href="/" class="nav-link active">
+                    <i class="fas fa-comment-dots"></i> Chat
+                </a>
+                <a href="/dashboard" class="nav-link">
+                    <i class="fas fa-chart-pie"></i> Finance Dashboard
+                </a>
+            </div>
+            
+            <div class="sidebar-footer">
+                <a href="#" id="clear-chat" class="sidebar-button">
+                    <i class="fas fa-trash"></i> Clear Chat
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="chat-container">
+                <!-- Message Area -->
+                <div id="chat-messages">
+                    <div class="message bot-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="sender-name">AIWealth</span>
+                            </div>
+                            <div class="message-text">
+                                <p>Hello! I'm your AI financial advisor. I can help you with budgeting, expense tracking, financial planning, and more. Here are a few ways I can assist you:</p>
+                                <ul>
+                                    <li>Track expenses: Just say "Add $45 for groceries"</li>
+                                    <li>Check budgets: Ask "What's my budget for food?"</li>
+                                    <li>Set budgets: Say "Set budget for entertainment to $200"</li>
+                                    <li>Get financial advice: Ask about saving, debt management, or investing</li>
+                                </ul>
+                                <p>How can I help with your finances today?</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div class="input-container">
+                    <div class="input-box">
+                        <textarea id="user-message" placeholder="Message AIWealth..." rows="1"></textarea>
+                        <button id="send-btn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <p class="disclaimer">AIWealth provides general financial guidance. For specific advice, please consult a certified financial professional.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Suggested Questions Modal -->
+    <div id="suggestions-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Chat</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h3>Suggested questions</h3>
+                <div class="suggestion-list">
+                    <div class="suggestion" onclick="askQuestion('How can I create a monthly budget?')">
+                        <i class="fas fa-calculator"></i>
+                        <div class="suggestion-text">
+                            <p>How can I create a monthly budget?</p>
+                        </div>
+                    </div>
+                    <div class="suggestion" onclick="askQuestion('Add $75 for groceries')">
+                        <i class="fas fa-shopping-cart"></i>
+                        <div class="suggestion-text">
+                            <p>Add $75 for groceries</p>
+                        </div>
+                    </div>
+                    <div class="suggestion" onclick="askQuestion('What\'s my budget for food?')">
+                        <i class="fas fa-utensils"></i>
+                        <div class="suggestion-text">
+                            <p>What's my budget for food?</p>
+                        </div>
+                    </div>
+                    <div class="suggestion" onclick="askQuestion('Set budget for entertainment to $200')">
+                        <i class="fas fa-film"></i>
+                        <div class="suggestion-text">
+                            <p>Set budget for entertainment to $200</p>
+                        </div>
+                    </div>
+                    <div class="suggestion" onclick="askQuestion('What\'s the difference between good debt and bad debt?')">
+                        <i class="fas fa-credit-card"></i>
+                        <div class="suggestion-text">
+                            <p>What's the difference between good debt and bad debt?</p>
+                        </div>
+                    </div>
+                    <div class="suggestion" onclick="askQuestion('How much should I save for an emergency fund?')">
+                        <i class="fas fa-piggy-bank"></i>
+                        <div class="suggestion-text">
+                            <p>How much should I save for an emergency fund?</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const userMessageInput = document.getElementById('user-message');
+            const sendButton = document.getElementById('send-btn');
+            const clearChatButton = document.getElementById('clear-chat');
+            const modal = document.getElementById('suggestions-modal');
+            const closeModal = document.querySelector('.close');
+            
+            // Auto-resize textarea as user types
+            userMessageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                
+                // Enable/disable send button based on content
+                if (this.value.trim().length > 0) {
+                    sendButton.removeAttribute('disabled');
+                } else {
+                    sendButton.setAttribute('disabled', 'disabled');
+                }
+            });
+            
+            // Show suggestions modal on new chat button click
+            clearChatButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                modal.style.display = 'block';
+            });
+            
+            // Close modal when clicking the X
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside of it
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Function to add a message to the chat
+            function addMessage(message, isUser) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = isUser ? 'message user-message' : 'message bot-message';
+                
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                
+                const iconElement = document.createElement('i');
+                iconElement.className = isUser ? 'fas fa-user' : 'fas fa-robot';
+                avatarDiv.appendChild(iconElement);
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'message-header';
+                
+                const senderName = document.createElement('span');
+                senderName.className = 'sender-name';
+                senderName.textContent = isUser ? 'You' : 'AIWealth';
+                headerDiv.appendChild(senderName);
+                
+                const textDiv = document.createElement('div');
+                textDiv.className = 'message-text';
+                
+                // Convert newlines to <br> tags and handle markdown-style formatting
+                let formattedMessage = message.replace(/\n/g, '<br>');
+                
+                // Convert markdown code blocks
+                formattedMessage = formattedMessage.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+                
+                // Convert markdown bullet points
+                formattedMessage = formattedMessage.replace(/^\s*-\s(.+)$/gm, '<li>$1</li>');
+                formattedMessage = formattedMessage.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+                
+                // Convert markdown bold
+                formattedMessage = formattedMessage.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                
+                // Convert markdown italic
+                formattedMessage = formattedMessage.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                
+                textDiv.innerHTML = formattedMessage;
+                
+                contentDiv.appendChild(headerDiv);
+                contentDiv.appendChild(textDiv);
+                
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
+                
+                chatMessages.appendChild(messageDiv);
+                
+                // Auto scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Function to handle sending a message
+            async function sendMessage() {
+                const message = userMessageInput.value.trim();
+                if (!message) return;
+                
+                // Add user message to chat
+                addMessage(message, true);
+                
+                // Clear input and reset height
+                userMessageInput.value = '';
+                userMessageInput.style.height = 'auto';
+                sendButton.setAttribute('disabled', 'disabled');
+                
+                // Show typing indicator
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'message bot-message loading';
+                
+                const loadingAvatar = document.createElement('div');
+                loadingAvatar.className = 'message-avatar';
+                
+                const loadingIcon = document.createElement('i');
+                loadingIcon.className = 'fas fa-robot';
+                loadingAvatar.appendChild(loadingIcon);
+                
+                const loadingContent = document.createElement('div');
+                loadingContent.className = 'message-content';
+                
+                const loadingHeader = document.createElement('div');
+                loadingHeader.className = 'message-header';
+                
+                const loadingName = document.createElement('span');
+                loadingName.className = 'sender-name';
+                loadingName.textContent = 'AIWealth';
+                loadingHeader.appendChild(loadingName);
+                
+                const loadingText = document.createElement('div');
+                loadingText.className = 'message-text typing-indicator';
+                loadingText.innerHTML = '<span></span><span></span><span></span>';
+                
+                loadingContent.appendChild(loadingHeader);
+                loadingContent.appendChild(loadingText);
+                
+                loadingDiv.appendChild(loadingAvatar);
+                loadingDiv.appendChild(loadingContent);
+                
+                chatMessages.appendChild(loadingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                try {
+                    // Send message to server
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Remove typing indicator
+                    chatMessages.removeChild(loadingDiv);
+                    
+                    // Add bot response to chat
+                    addMessage(data.response, false);
+                } catch (error) {
+                    console.error('Error:', error);
+                    // Remove typing indicator
+                    chatMessages.removeChild(loadingDiv);
+                    // Add error message
+                    addMessage('Sorry, I encountered an error. Please try again.', false);
+                }
+            }
+            
+            // Event listeners
+            sendButton.addEventListener('click', sendMessage);
+            
+            userMessageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!sendButton.hasAttribute('disabled')) {
+                        sendMessage();
+                    }
+                }
+            });
+            
+            // Clear chat functionality
+            clearChatButton.addEventListener('click', function() {
+                // Remove all messages except the welcome message
+                while (chatMessages.children.length > 1) {
+                    chatMessages.removeChild(chatMessages.lastChild);
+                }
+            });
+            
+            // Focus input on page load
+            userMessageInput.focus();
+        });
+        
+        // Function to ask a suggested question
+        function askQuestion(question) {
+            document.getElementById('suggestions-modal').style.display = 'none';
+            document.getElementById('user-message').value = question;
+            document.getElementById('user-message').dispatchEvent(new Event('input'));
+            document.getElementById('send-btn').click();
+        }
+    </script>
+</body>
+</html>
